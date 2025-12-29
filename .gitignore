@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+
+# Byte-compiled
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env
+.env.test
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# MyPy / pytest / coverage
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Docker
+*.log
+docker-data/
