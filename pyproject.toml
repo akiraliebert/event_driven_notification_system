@@ -1,0 +1,14 @@
+[project]
+name = "event-driven-notification-system"
+version = "0.1.0"
+description = "Event-driven notification system monorepo"
+requires-python = ">=3.12"
+
+[tool.uv.workspace]
+members = [
+    "shared",
+    "services/*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["shared/tests"]
