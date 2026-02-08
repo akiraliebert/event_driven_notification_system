@@ -319,6 +319,7 @@ source = { virtual = "." }
 
 [package.optional-dependencies]
 integration-test = [
+    { name = "alembic" },
     { name = "delivery-worker" },
     { name = "event-gateway" },
     { name = "httpx" },
@@ -331,6 +332,7 @@ integration-test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "alembic", marker = "extra == 'integration-test'", specifier = ">=1.14,<2.0" },
     { name = "delivery-worker", marker = "extra == 'integration-test'", editable = "services/delivery_worker" },
     { name = "event-gateway", marker = "extra == 'integration-test'", editable = "services/event_gateway" },
     { name = "httpx", marker = "extra == 'integration-test'", specifier = ">=0.27" },
