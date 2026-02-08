@@ -22,7 +22,10 @@ class RateLimitConfig(BaseSettings):
             "sms": self.sms_per_minute,
             "push": self.push_per_minute,
         }
-        return limits[channel]
+        limit = limits.get(channel)
+        if limit is None:
+            raise ValueError(f"Unknown channel: {channel!r}")
+        return limit
 
 
 class DeliveryConfig(BaseSettings):

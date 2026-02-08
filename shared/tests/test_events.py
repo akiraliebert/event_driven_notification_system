@@ -98,13 +98,13 @@ class TestPaymentFailedPayload:
         )
         assert p.reason == "Insufficient funds"
 
-    def test_empty_reason_allowed(self):
-        p = PaymentFailedPayload(
-            payment_id=uuid4(),
-            user_id=uuid4(),
-            reason="",
-        )
-        assert p.reason == ""
+    def test_empty_reason_rejected(self):
+        with pytest.raises(ValidationError):
+            PaymentFailedPayload(
+                payment_id=uuid4(),
+                user_id=uuid4(),
+                reason="",
+            )
 
 
 class TestTypedEvents:

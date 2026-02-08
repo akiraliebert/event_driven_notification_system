@@ -2,10 +2,11 @@
 
 from typing import Any
 
-from jinja2 import Environment, StrictUndefined
+from jinja2 import StrictUndefined
+from jinja2.sandbox import SandboxedEnvironment
 
-_env = Environment(
-    autoescape=False,
+_env = SandboxedEnvironment(
+    autoescape=True,
     undefined=StrictUndefined,
     keep_trailing_newline=False,
 )
@@ -14,7 +15,8 @@ _env = Environment(
 def render_template(template_str: str, context: dict[str, Any]) -> str:
     """Render a Jinja2 template string with the given context.
 
-    Uses StrictUndefined — raises on missing variables.
+    Uses SandboxedEnvironment to prevent SSTI and StrictUndefined
+    to raise on missing variables.
     All context values are converted to strings for safe template rendering.
     """
     str_context = {k: str(v) for k, v in context.items()}

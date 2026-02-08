@@ -1,12 +1,14 @@
 import logging
 from uuid import UUID
 
-from confluent_kafka import KafkaException, Producer
+from confluent_kafka import KafkaError, KafkaException, Message, Producer
 
 from shared.config import KafkaConfig
 from shared.events.typed import AnyTypedEvent
 
 logger = logging.getLogger(__name__)
+
+_FLUSH_TIMEOUT_SECONDS = 5.0
 
 
 class KafkaEventProducer:
@@ -25,6 +27,9 @@ class KafkaEventProducer:
     def publish_event(self, event: AnyTypedEvent, partition_key: UUID) -> None:
         """Serialize and publish a typed event to the domain.events topic.
 
+        Blocks until the broker acknowledges the message so that a 202
+        response genuinely means "accepted by broker".
+
         Raises KafkaException or BufferError on failure.
         """
         value = event.model_dump_json().encode("utf-8")
@@ -36,7 +41,12 @@ class KafkaEventProducer:
             value=value,
             on_delivery=self._on_delivery,
         )
-        self._producer.poll(0)
+        remaining = self._producer.flush(timeout=_FLUSH_TIMEOUT_SECONDS)
+        if remaining > 0:
+            raise KafkaException(
+                KafkaError._TIMED_OUT,
+                "Timed out waiting for broker acknowledgement",
+            )
 
     def health_check(self) -> bool:
         """Check Kafka connectivity via list_topics."""
@@ -56,6 +66,6 @@ class KafkaEventProducer:
             )
 
     @staticmethod
-    def _on_delivery(err: object, msg: object) -> None:
+    def _on_delivery(err: KafkaError | None, msg: Message) -> None:
         if err is not None:
             logger.error("Kafka delivery failed: %s", err)

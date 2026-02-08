@@ -1,6 +1,9 @@
 import os
 from unittest.mock import patch
 
+import pytest
+from pydantic import ValidationError
+
 from shared.config import KafkaConfig, PostgresConfig, RedisConfig
 
 
@@ -72,8 +75,15 @@ class TestPostgresConfig:
     def test_port_validation(self):
         env = {"POSTGRES_PORT": "not_a_number"}
         with patch.dict(os.environ, env, clear=False):
-            try:
+            with pytest.raises(ValidationError):
                 PostgresConfig()
-                assert False, "Should have raised"
-            except Exception:
-                pass
+
+    def test_dsn_url_encodes_special_chars(self):
+        env = {
+            "POSTGRES_USER": "user@org",
+            "POSTGRES_PASSWORD": "p@ss/w#rd",
+        }
+        with patch.dict(os.environ, env, clear=False):
+            config = PostgresConfig()
+        assert "user%40org" in config.dsn
+        assert "p%40ss%2Fw%23rd" in config.dsn

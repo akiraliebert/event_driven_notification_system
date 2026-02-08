@@ -8,6 +8,7 @@ import json
 import logging
 import signal
 import sys
+from collections import defaultdict
 
 from celery import Celery
 
@@ -21,6 +22,8 @@ from notification_service.log import setup_logging
 from notification_service.producer import KafkaStatusProducer
 
 logger = logging.getLogger(__name__)
+
+MAX_HANDLER_RETRIES = 3
 
 
 def main() -> None:
@@ -47,6 +50,9 @@ def main() -> None:
 
     # Graceful shutdown
     running = True
+
+    # Track handler failures per (topic, partition, offset) to detect poison pills
+    failure_counts: defaultdict[tuple[str, int, int], int] = defaultdict(int)
 
     def _shutdown(signum: int, _frame: object) -> None:
         nonlocal running
@@ -89,10 +95,30 @@ def main() -> None:
                 consumer.commit(msg)
                 continue
             except Exception:
-                logger.exception(
-                    "Failed to process event, will retry on redelivery",
-                    extra={"raw_event": raw_event},
-                )
+                msg_key = (msg.topic(), msg.partition(), msg.offset())
+                failure_counts[msg_key] += 1
+                if failure_counts[msg_key] >= MAX_HANDLER_RETRIES:
+                    logger.error(
+                        "Poison pill detected: message failed %d times, "
+                        "committing offset to skip",
+                        MAX_HANDLER_RETRIES,
+                        extra={
+                            "topic": msg.topic(),
+                            "partition": msg.partition(),
+                            "offset": msg.offset(),
+                            "raw_event": raw_event,
+                        },
+                    )
+                    del failure_counts[msg_key]
+                    consumer.commit(msg)
+                else:
+                    logger.exception(
+                        "Failed to process event (attempt %d/%d), "
+                        "will retry on redelivery",
+                        failure_counts[msg_key],
+                        MAX_HANDLER_RETRIES,
+                        extra={"raw_event": raw_event},
+                    )
                 continue
 
             consumer.commit(msg)

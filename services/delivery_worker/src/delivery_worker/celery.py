@@ -43,7 +43,7 @@ def _init_worker(**_kwargs: object) -> None:
     setup_logging(delivery_config.log_level)
 
     pg_config = PostgresConfig()
-    engine = create_db_engine(pg_config.dsn)
+    engine = create_db_engine(pg_config.dsn, pool_pre_ping=True)
     session_factory = create_session_factory(engine)
 
     redis_config = RedisConfig()

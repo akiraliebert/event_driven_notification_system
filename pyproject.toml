@@ -30,7 +30,13 @@ notification-service = { workspace = true }
 delivery-worker = { workspace = true }
 
 [tool.pytest.ini_options]
-testpaths = ["shared/tests", "services/event_gateway/tests"]
+testpaths = [
+    "shared/tests",
+    "services/event_gateway/tests",
+    "services/notification_service/tests",
+    "services/delivery_worker/tests",
+    "tests/integration",
+]
 markers = [
     "integration: Integration tests requiring Docker (testcontainers)",
 ]

@@ -1,7 +1,7 @@
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserRegisteredPayload(BaseModel):
@@ -18,4 +18,4 @@ class OrderCompletedPayload(BaseModel):
 class PaymentFailedPayload(BaseModel):
     payment_id: UUID
     user_id: UUID
-    reason: str
+    reason: str = Field(min_length=1)

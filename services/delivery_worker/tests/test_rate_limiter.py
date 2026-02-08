@@ -1,16 +1,16 @@
 """Tests for the Redis sliding window rate limiter."""
 
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 from delivery_worker.config import RateLimitConfig
 from delivery_worker.rate_limiter import RateLimiter
 
 
-def _make_limiter(pipeline_zcard_result: int) -> tuple[RateLimiter, MagicMock]:
+def _make_limiter(lua_result: int) -> tuple[RateLimiter, MagicMock]:
     """Create a RateLimiter with a mocked Redis client.
 
-    *pipeline_zcard_result* controls what ZCARD returns so we can
-    simulate "under limit" vs "over limit" scenarios.
+    *lua_result* controls what the Lua script returns:
+    1 = request allowed, 0 = rate limited.
     """
     config = RateLimitConfig(
         email_per_minute=10,
@@ -19,46 +19,54 @@ def _make_limiter(pipeline_zcard_result: int) -> tuple[RateLimiter, MagicMock]:
         window_seconds=60,
     )
     redis_mock = MagicMock()
-    pipe_mock = MagicMock()
-    # pipeline().execute() returns [zremrangebyscore_result, zcard_result]
-    pipe_mock.execute.return_value = [0, pipeline_zcard_result]
-    redis_mock.pipeline.return_value = pipe_mock
+    script_mock = MagicMock(return_value=lua_result)
+    redis_mock.register_script.return_value = script_mock
 
-    return RateLimiter(redis_mock, config), redis_mock
+    limiter = RateLimiter(redis_mock, config)
+    return limiter, script_mock
 
 
 class TestRateLimiter:
     def test_acquire_allowed_when_under_limit(self) -> None:
-        limiter, redis_mock = _make_limiter(pipeline_zcard_result=5)
+        limiter, script_mock = _make_limiter(lua_result=1)
 
         result = limiter.acquire("email")
 
         assert result is True
-        redis_mock.zadd.assert_called_once()
-        redis_mock.expire.assert_called_once()
+        script_mock.assert_called_once()
 
     def test_acquire_denied_when_at_limit(self) -> None:
-        limiter, redis_mock = _make_limiter(pipeline_zcard_result=10)
+        limiter, script_mock = _make_limiter(lua_result=0)
 
         result = limiter.acquire("email")
 
         assert result is False
-        redis_mock.zadd.assert_not_called()
+        script_mock.assert_called_once()
 
-    def test_acquire_denied_when_over_limit(self) -> None:
-        limiter, redis_mock = _make_limiter(pipeline_zcard_result=15)
-
-        result = limiter.acquire("email")
-
-        assert result is False
-
-    def test_pipeline_trims_expired_entries(self) -> None:
-        limiter, redis_mock = _make_limiter(pipeline_zcard_result=0)
-        pipe_mock = redis_mock.pipeline.return_value
+    def test_lua_script_called_with_correct_keys(self) -> None:
+        limiter, script_mock = _make_limiter(lua_result=1)
 
         limiter.acquire("sms")
 
-        # First call on pipeline should be zremrangebyscore
-        pipe_mock.zremrangebyscore.assert_called_once()
-        args = pipe_mock.zremrangebyscore.call_args
-        assert args[0][0] == "ratelimit:sms"
+        call_kwargs = script_mock.call_args
+        assert call_kwargs.kwargs["keys"] == ["ratelimit:sms"]
+
+    def test_lua_script_receives_correct_limit(self) -> None:
+        limiter, script_mock = _make_limiter(lua_result=1)
+
+        limiter.acquire("push")
+
+        call_kwargs = script_mock.call_args
+        args = call_kwargs.kwargs["args"]
+        # args = [window_start, limit, now, uuid, ttl]
+        assert args[1] == 20  # push_per_minute
+
+    def test_lua_script_receives_ttl(self) -> None:
+        limiter, script_mock = _make_limiter(lua_result=1)
+
+        limiter.acquire("email")
+
+        call_kwargs = script_mock.call_args
+        args = call_kwargs.kwargs["args"]
+        # ttl = window_seconds + 1 = 61
+        assert args[4] == 61

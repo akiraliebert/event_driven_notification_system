@@ -57,6 +57,7 @@ class EventHandler:
         }
 
         created_notifications: list[Notification] = []
+        pending_tasks: list[tuple[dict[str, str], dict[str, Any]]] = []
 
         with self._session_factory() as session:
             notification_repo = NotificationRepository(session)
@@ -125,7 +126,7 @@ class EventHandler:
                 notification_repo.create(notification)
                 created_notifications.append(notification)
 
-                # Dispatch Celery task
+                # Collect Celery task params (dispatch after commit)
                 task_kwargs = {"notification_id": str(notification.id)}
                 celery_kwargs: dict[str, Any] = {"queue": priority}
                 if eta is not None:
@@ -134,14 +135,18 @@ class EventHandler:
                         "Deferred delivery due to quiet hours",
                         extra={**log_ctx, "channel": channel, "eta": str(eta)},
                     )
-
-                self._celery.send_task(
-                    "delivery_worker.tasks.send_notification",
-                    kwargs=task_kwargs,
-                    **celery_kwargs,
-                )
+                pending_tasks.append((task_kwargs, celery_kwargs))
 
             session.commit()
+
+        # Dispatch Celery tasks after successful commit to avoid
+        # workers picking up tasks before the DB transaction is visible.
+        for task_kwargs, celery_kwargs in pending_tasks:
+            self._celery.send_task(
+                "delivery_worker.tasks.send_notification",
+                kwargs=task_kwargs,
+                **celery_kwargs,
+            )
 
         # Publish status events after successful commit
         for n in created_notifications:

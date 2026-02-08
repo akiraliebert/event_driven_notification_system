@@ -2,6 +2,7 @@
 
 import datetime
 import uuid
+from typing import Any
 
 from sqlalchemy import (
     Boolean,
@@ -37,7 +38,7 @@ class Notification(Base):
     )
     source_event_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
     source_event_type: Mapped[str] = mapped_column(String(64), nullable=False)
-    content: Mapped[dict] = mapped_column(JSONBCompatible, nullable=False)
+    content: Mapped[dict[str, Any]] = mapped_column(JSONBCompatible, nullable=False)
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
     next_retry_at: Mapped[datetime.datetime | None] = mapped_column(
@@ -90,7 +91,7 @@ class UserPreference(Base):
     __tablename__ = "user_preferences"
 
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
-    channels: Mapped[list] = mapped_column(JSONBCompatible, nullable=False)
+    channels: Mapped[list[str]] = mapped_column(JSONBCompatible, nullable=False)
     quiet_hours_start: Mapped[datetime.time | None] = mapped_column(
         Time, nullable=True
     )

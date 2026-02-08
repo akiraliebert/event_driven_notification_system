@@ -1,4 +1,6 @@
 from shared.config import KafkaConfig, PostgresConfig, RedisConfig
+from shared.kafka import KafkaStatusPublisher
+from shared.log import JsonFormatter, setup_logging
 from shared.db import (
     Base,
     Notification,
@@ -62,4 +64,7 @@ __all__ = [
     "KafkaConfig",
     "RedisConfig",
     "PostgresConfig",
+    "KafkaStatusPublisher",
+    "JsonFormatter",
+    "setup_logging",
 ]

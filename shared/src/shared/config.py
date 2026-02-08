@@ -1,3 +1,5 @@
+from urllib.parse import quote_plus
+
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -31,6 +33,6 @@ class PostgresConfig(BaseSettings):
     @property
     def dsn(self) -> str:
         return (
-            f"postgresql://{self.user}:{self.password}"
+            f"postgresql://{quote_plus(self.user)}:{quote_plus(self.password)}"
             f"@{self.host}:{self.port}/{self.database}"
         )

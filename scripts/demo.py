@@ -50,33 +50,32 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    client = httpx.Client(base_url=args.gateway_url, timeout=10.0)
+    with httpx.Client(base_url=args.gateway_url, timeout=10.0) as client:
+        # Health check
+        try:
+            resp = client.get("/health")
+        except httpx.ConnectError:
+            print(f"Cannot connect to {args.gateway_url}")
+            print("Make sure services are running: make up-app")
+            sys.exit(1)
 
-    # Health check
-    try:
-        resp = client.get("/health")
-    except httpx.ConnectError:
-        print(f"Cannot connect to {args.gateway_url}")
-        print("Make sure services are running: make up-app")
-        sys.exit(1)
+        if resp.status_code != 200:
+            print(f"Gateway unhealthy: {resp.text}")
+            sys.exit(1)
 
-    if resp.status_code != 200:
-        print(f"Gateway unhealthy: {resp.text}")
-        sys.exit(1)
+        print(f"Gateway healthy at {args.gateway_url}\n")
 
-    print(f"Gateway healthy at {args.gateway_url}\n")
+        # Send events
+        for event in EVENTS:
+            resp = client.post("/events", json=event)
+            status = resp.status_code
+            body = resp.json()
 
-    # Send events
-    for event in EVENTS:
-        resp = client.post("/events", json=event)
-        status = resp.status_code
-        body = resp.json()
-
-        if status == 202:
-            event_id = body["event_id"]
-            print(f"  {event['event_type']:20s}  -> accepted  event_id={event_id}")
-        else:
-            print(f"  {event['event_type']:20s}  -> ERROR {status}: {body}")
+            if status == 202:
+                event_id = body["event_id"]
+                print(f"  {event['event_type']:20s}  -> accepted  event_id={event_id}")
+            else:
+                print(f"  {event['event_type']:20s}  -> ERROR {status}: {body}")
 
     print(f"\nSent {len(EVENTS)} events.")
     print("\nVerify results:")

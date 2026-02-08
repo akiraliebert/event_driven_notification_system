@@ -140,8 +140,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      FLASK_ENV: ${FLASK_ENV:-development}
-      FLASK_DEBUG: ${FLASK_DEBUG:-1}
+      FLASK_DEBUG: ${FLASK_DEBUG:-0}
     volumes:
       - ./shared/src:/app/shared/src
       - ./services/event_gateway/src:/app/services/event_gateway/src

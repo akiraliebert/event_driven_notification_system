@@ -913,6 +913,7 @@ name = "shared"
 version = "0.1.0"
 source = { editable = "shared" }
 dependencies = [
+    { name = "confluent-kafka" },
     { name = "pydantic", extra = ["email"] },
     { name = "pydantic-settings" },
     { name = "sqlalchemy" },
@@ -930,6 +931,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "alembic", marker = "extra == 'migrations'", specifier = ">=1.14,<2.0" },
+    { name = "confluent-kafka", specifier = ">=2.6,<3.0" },
     { name = "psycopg2-binary", marker = "extra == 'migrations'", specifier = ">=2.9,<3.0" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.0,<3.0" },
     { name = "pydantic-settings", specifier = ">=2.0,<3.0" },

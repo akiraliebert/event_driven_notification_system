@@ -158,5 +158,8 @@ def upgrade() -> None:
 def downgrade() -> None:
     for tpl in TEMPLATES:
         op.execute(
-            templates_table.delete().where(templates_table.c.id == tpl["id"])
+            templates_table.delete().where(
+                (templates_table.c.event_type == tpl["event_type"])
+                & (templates_table.c.channel == tpl["channel"])
+            )
         )
