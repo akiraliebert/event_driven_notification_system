@@ -5,6 +5,15 @@ description = "Kafka consumer that creates delivery tasks based on events"
 requires-python = ">=3.12"
 dependencies = [
     "shared",
+    "confluent-kafka>=2.6,<3.0",
+    "celery>=5.4,<6.0",
+    "jinja2>=3.1,<4.0",
+    "pydantic-settings>=2.0,<3.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
 ]
 
 [tool.uv.sources]
