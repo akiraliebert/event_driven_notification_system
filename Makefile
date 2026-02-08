@@ -1,4 +1,4 @@
-.PHONY: up down logs ps restart clean up-app build kafka-topics psql redis-cli
+.PHONY: up down logs ps restart clean up-app build kafka-topics migrate psql redis-cli
 
 # Infrastructure only (default)
 up:
@@ -27,6 +27,10 @@ restart:
 # Remove all containers and volumes (data will be lost)
 clean:
 	docker compose --profile app down -v
+
+# Run database migrations
+migrate:
+	docker compose --profile app run --rm db-migrate
 
 # Re-run Kafka topic creation
 kafka-topics:
