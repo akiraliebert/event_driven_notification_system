@@ -36,6 +36,16 @@ class NotificationRepository:
         )
         return self._session.scalars(stmt).first()
 
+    def get_channels_by_event_id(self, source_event_id: UUID) -> set[str]:
+        """Get channels that already have notifications for this event.
+
+        Used for idempotency: one query instead of N per-channel lookups.
+        """
+        stmt = select(Notification.channel).where(
+            Notification.source_event_id == source_event_id,
+        )
+        return set(self._session.scalars(stmt).all())
+
     def update_status(
         self,
         notification_id: UUID,

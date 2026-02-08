@@ -168,6 +168,40 @@ class TestNotificationRepository:
         assert results[0].id == older.id
         assert results[1].id == newer.id
 
+    def test_get_channels_by_event_id(self, db_session: Session) -> None:
+        repo = NotificationRepository(db_session)
+        event_id = uuid.uuid4()
+
+        # No notifications yet
+        assert repo.get_channels_by_event_id(event_id) == set()
+
+        # Create notifications for two channels
+        repo.create(
+            _make_notification(source_event_id=event_id, channel=Channel.EMAIL)
+        )
+        repo.create(
+            _make_notification(source_event_id=event_id, channel=Channel.SMS)
+        )
+
+        channels = repo.get_channels_by_event_id(event_id)
+        assert channels == {Channel.EMAIL, Channel.SMS}
+
+    def test_get_channels_by_event_id_ignores_other_events(
+        self, db_session: Session
+    ) -> None:
+        repo = NotificationRepository(db_session)
+        event_a = uuid.uuid4()
+        event_b = uuid.uuid4()
+
+        repo.create(
+            _make_notification(source_event_id=event_a, channel=Channel.EMAIL)
+        )
+        repo.create(
+            _make_notification(source_event_id=event_b, channel=Channel.PUSH)
+        )
+
+        assert repo.get_channels_by_event_id(event_a) == {Channel.EMAIL}
+
     def test_idempotency_check_pattern(self, db_session: Session) -> None:
         """Simulate the idempotency pattern used by Notification Service."""
         repo = NotificationRepository(db_session)
