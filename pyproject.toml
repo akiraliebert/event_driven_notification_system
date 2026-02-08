@@ -11,4 +11,4 @@ members = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["shared/tests"]
+testpaths = ["shared/tests", "services/event_gateway/tests"]
