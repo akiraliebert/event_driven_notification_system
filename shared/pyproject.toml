@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "pydantic[email]>=2.0,<3.0",
     "pydantic-settings>=2.0,<3.0",
+    "sqlalchemy>=2.0,<3.0",
 ]
 
 [build-system]
@@ -18,4 +19,8 @@ packages = ["src/shared"]
 [project.optional-dependencies]
 test = [
     "pytest>=8.0",
+]
+migrations = [
+    "alembic>=1.14,<2.0",
+    "psycopg2-binary>=2.9,<3.0",
 ]

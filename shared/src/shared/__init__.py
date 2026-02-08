@@ -1,4 +1,15 @@
 from shared.config import KafkaConfig, PostgresConfig, RedisConfig
+from shared.db import (
+    Base,
+    Notification,
+    NotificationRepository,
+    NotificationTemplate,
+    TemplateRepository,
+    UserPreference,
+    UserPreferenceRepository,
+    create_db_engine,
+    create_session_factory,
+)
 from shared.enums import (
     Channel,
     EventType,
@@ -22,6 +33,15 @@ from shared.events import (
 )
 
 __all__ = [
+    "Base",
+    "Notification",
+    "NotificationTemplate",
+    "UserPreference",
+    "NotificationRepository",
+    "TemplateRepository",
+    "UserPreferenceRepository",
+    "create_db_engine",
+    "create_session_factory",
     "Channel",
     "EventType",
     "NotificationStatus",
